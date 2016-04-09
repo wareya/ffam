@@ -409,7 +409,7 @@ int main(int argc, char ** argv)
         mydef.height = height;
         mydef.xoffset = c.right;
         mydef.yoffset = myfont.ASCE-maxy;
-        mydef.devicewidth = c.right+d+c.extra;
+        mydef.devicewidth = c.right+mydef.width+c.extra;
         mydef.pixels = bits;
         mychix.codepoint = c.codepoint;
         mychix.addr = 0;
