@@ -1,4 +1,4 @@
-This project contains a ripper and a generator for grub's awful pf2 font format.
+ffam-rip and ffam-build are conversion tools to enable end users to manually edit grub pf2 font files.
 
 I did this so you don't have to.
 
