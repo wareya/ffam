@@ -263,7 +263,7 @@ int main(int argc, char ** argv)
         toplevel:
         auto count = sscanf(line, "%255[^=:]%1[=:]%255[^\n]", key, kind, value);
         
-        if(count <= 0) break;
+        if(count == EOF) break;
         if(kind[0] == '=' and count == 3)
         {
             if(strncmp(key, "NAME", 255) == 0)
@@ -388,7 +388,7 @@ int main(int argc, char ** argv)
         }
         u32 width;
         u32 height;
-        if(maxx < minx)
+        if(maxy < miny)
         {
             width = 0;
             height = 0;
