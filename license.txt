@@ -1,0 +1,12 @@
+Copyright 2016, Alexander 'Wareya' Nadeau <wareya@gmail.com>
+
+This software is provided 'as-is', without any express or implied warranty. In
+no event will the authors be held liable for any damages arising from the use
+of this software.
+
+Permission is granted to anyone to use this software and/or its source code for
+any purpose, including commercial applications, and to alter it and distribute
+it freely, provided that the above copyright notice and this permission notice
+appear in all source code distributions. It is not necessary for this notice to
+appear in distributions of non-substantial portions of source code, nor is it
+necessary for it to appear in end products.
