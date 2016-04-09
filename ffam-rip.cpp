@@ -323,7 +323,7 @@ int main(int argc, char ** argv)
         int y = myfont.ASCE-def.height-def.yoffset;
         for(uint i = 0; i < def.pixels.size(); i++)
         {
-            int ax = i%def.width + 1;
+            int ax = i%def.width;
             int ay = i/def.width;
             pixels[x+ax + (y+ay)*sumWidth] = def.pixels[i]?c_fg:c_bg;
         }
