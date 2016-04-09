@@ -320,8 +320,8 @@ int main(int argc, char ** argv)
                 while(!ferror(f) and !feof(f))
                 {
                     line = read_line(f);
-                    if(line == nullptr) goto fallthru; // read or allocation error
-                    if(line[0] == '\0') goto fallthru; // end of file
+                    if(line == nullptr) {chars.push_back(mydat); goto fallthru;}
+                    if(line[0] == '\0') break;
                     if(line[0] == '\n') continue; // blank line
                     if(line[0] != ' ' and line[0] != '\t') break;
                     
@@ -408,7 +408,7 @@ int main(int argc, char ** argv)
         mydef.width = width;
         mydef.height = height;
         mydef.xoffset = c.right;
-        mydef.yoffset = myfont.ASCE-maxy;
+        mydef.yoffset = myfont.ASCE-maxy-1;
         mydef.devicewidth = mydef.width+c.extra;
         mydef.pixels = bits;
         mychix.codepoint = c.codepoint;
