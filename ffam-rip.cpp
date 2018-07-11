@@ -151,29 +151,29 @@ int main(int argc, char ** argv)
     
     while(i < argc && argv[i][0] == '-')
     {
-	if(argv[i][1]=='c')
-	{
-	    i++;
-	    if(i < argc)
-	    {
-		display=atoi(argv[i]);
-		if(display < 0)
-		{
-		    usage(argv[0], 1);
-		}
-	    }
-	}
-	else
-	{
-	    printf("Unknown option: %s\n", argv[i]);
-	    exit(1);
-	}
-	i++;
+        if(argv[i][1]=='c')
+        {
+            i++;
+            if(i < argc)
+            {
+                display=atoi(argv[i]);
+                if(display < 0)
+                {
+                    usage(argv[0], 1);
+                }
+            }
+        }
+        else
+        {
+            printf("Unknown option: %s\n", argv[i]);
+            exit(1);
+        }
+        i++;
     }
 
     if(argc - i < 2)
     {
-	usage(argv[0], 1);
+        usage(argv[0], 1);
     }
 
     std::string outtxt(argv[i+1]);
@@ -344,10 +344,10 @@ int main(int argc, char ** argv)
     u32 dheight = height; // bmp height
     if(display)
     {
-	dwidth = (myfont.MAXW+s_boxpad+2)*d_cols+s_boxpad;
-	cheight = myfont.MAXH;
-	height = cheight+s_boxpad+2;
-	dheight = height*((myfont.CHIX.size()+(d_cols-1))/d_cols)+s_boxpad;
+        dwidth = (myfont.MAXW+s_boxpad+2)*d_cols+s_boxpad;
+        cheight = myfont.MAXH;
+        height = cheight+s_boxpad+2;
+        dheight = height*((myfont.CHIX.size()+(d_cols-1))/d_cols)+s_boxpad;
     }
     printf("%dx%d\n",dheight,dwidth);
     
@@ -364,79 +364,79 @@ int main(int argc, char ** argv)
     for(auto c : myfont.CHIX)
     {
         auto def = definitions[c.addr];
-	int y=0;
-	if(display)
-	{
-	    // create bounding box
-	    y = (cnt/d_cols)*(s_boxpad+2+myfont.MAXH);
-	    for(uint i = s_boxpad; i < s_boxpad+myfont.MAXW+2; i++)
-	    {
-		pixels[x+i + (y+s_boxpad)*dwidth] = c_null;
-		pixels[x+i + (y+s_boxpad+myfont.MAXH+1)*dwidth] = c_null;
-	    }
-	    for(uint i = s_boxpad+1; i < s_boxpad+1+myfont.MAXH; i++)
-	    {
-		pixels[x+s_boxpad + (y+i)*dwidth] = c_null;
-		pixels[x+s_boxpad+myfont.MAXW+1 + (y+i)*dwidth] = c_null;
-	    }
-	    x += s_boxpad+1;
-	    y += s_boxpad+1;
-	}
-	int oy = myfont.ASCE-def.height-def.yoffset;
-	if(oy < 0) printf("Font %d extends above ascent. Not all pixels will be included.\n", cnt+1);
-	int ay = 0;
-	int ox = display ? def.xoffset : 0;
+        int y=0;
+        if(display)
+        {
+            // create bounding box
+            y = (cnt/d_cols)*(s_boxpad+2+myfont.MAXH);
+            for(uint i = s_boxpad; i < s_boxpad+myfont.MAXW+2; i++)
+            {
+                pixels[x+i + (y+s_boxpad)*dwidth] = c_null;
+                pixels[x+i + (y+s_boxpad+myfont.MAXH+1)*dwidth] = c_null;
+            }
+            for(uint i = s_boxpad+1; i < s_boxpad+1+myfont.MAXH; i++)
+            {
+                pixels[x+s_boxpad + (y+i)*dwidth] = c_null;
+                pixels[x+s_boxpad+myfont.MAXW+1 + (y+i)*dwidth] = c_null;
+            }
+            x += s_boxpad+1;
+            y += s_boxpad+1;
+        }
+        int oy = myfont.ASCE-def.height-def.yoffset;
+        if(oy < 0) printf("Font %d extends above ascent. Not all pixels will be included.\n", cnt+1);
+        int ay = 0;
+        int ox = display ? def.xoffset : 0;
         for(uint i = 0; i < def.pixels.size(); i++)
         {
             int ax = i%def.width;
             ay = i/def.width;
-	    u32 fg=c_fg;
-	    u32 bg=c_bg;
-	    if(oy+ay < 0 || oy+ay >= cheight)
-	    {
-		if(display && (oy+ay == -1 || oy+ay == myfont.MAXH))
-		{
-		    fg=c_red;
-		    bg=c_null;
-		}
-		else
-		{
-		    continue;
-		}
-	    }
-	    if(ox+ax < 0 || ox+ax >= myfont.MAXW)
-	    {
-		if(display && (ox+ax == -1 || ox+ax == myfont.MAXW))
-		{
-		    fg=c_red;
-		    bg=c_null;
-		}
-		else
-		{
-		    continue;
-		}
-	    }
+            u32 fg=c_fg;
+            u32 bg=c_bg;
+            if(oy+ay < 0 || oy+ay >= cheight)
+            {
+                if(display && (oy+ay == -1 || oy+ay == myfont.MAXH))
+                {
+                    fg=c_red;
+                    bg=c_null;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            if(ox+ax < 0 || ox+ax >= myfont.MAXW)
+            {
+                if(display && (ox+ax == -1 || ox+ax == myfont.MAXW))
+                {
+                    fg=c_red;
+                    bg=c_null;
+                }
+                else
+                {
+                    continue;
+                }
+            }
             pixels[x+ox+ax + (y+oy+ay)*dwidth] = def.pixels[i]?fg:bg;
         }
-	if(oy+ay > myfont.MAXH) printf("Font %d extends below descent. Not all pixels will be included.\n", cnt+1);
-	y += oy;
+        if(oy+ay > myfont.MAXH) printf("Font %d extends below descent. Not all pixels will be included.\n", cnt+1);
+        y += oy;
         x += display ? myfont.MAXW : def.width;
-	if(! display)
-	{
-	    for(uint i = 0; i < height; i++)
-	    {
-		pixels[x + i*dwidth] = c_null;
-	    }
-	}
-	x += 1;
-	cnt += 1;
-	if(display)
-	{
-	    if(cnt%d_cols==0)
-	    {
-		x = 0;
-	    }
-	}
+        if(! display)
+        {
+            for(uint i = 0; i < height; i++)
+            {
+                pixels[x + i*dwidth] = c_null;
+            }
+        }
+        x += 1;
+        cnt += 1;
+        if(display)
+        {
+            if(cnt%d_cols==0)
+            {
+                x = 0;
+            }
+        }
     }
     SDL_SaveBMP(myimage, outbmp.data());
     SDL_FreeSurface(myimage);
