@@ -378,7 +378,7 @@ int main(int argc, char ** argv)
         {
             auto rx = i%d;
             auto ry = i/d;
-            if(pixels[x+rx + w*ry] != c_null)
+            if(pixels[x+rx + w*ry] != c_bg)
             {
                 if(rx < minx) minx = rx;
                 if(rx > maxx) maxx = rx;
