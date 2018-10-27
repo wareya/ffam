@@ -1,8 +1,10 @@
 #include <stdio.h>
-#include <SDL2/SDL.h>
 #include <vector>
 #include <string>
 #include <map>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "deps/stb_image_write.h"
 
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -30,11 +32,24 @@ struct PFF2
     std::vector<chix> CHIX;
 };
 
+
+u32 byteswap_32(u32 in)
+{
+    return ((in & 0xFF) << 24)
+         | ((in & 0xFF00) << 8)
+         | ((in >> 8) & 0xFF00)
+         |  (in >> 24);
+}
+u16 byteswap_16(u16 in)
+{
+    return ((in & 0xFF) << 8) | (in >> 8);
+}
+
 std::string get_string(FILE* f)
 {
     u32 len;
     fread(&len,4,1,f);
-    len = SDL_SwapBE32(len);
+    len = byteswap_32(len);
     if(len > 255) len = 255; // Abusive font.
     char * str = (char*)malloc(len+1);
     fread(str,1,len,f);
@@ -71,31 +86,31 @@ void loadSLAN(PFF2* font, FILE* f)
 void loadPTSZ(PFF2* font, FILE* f)
 {
     fread(&font->PTSZ,2,1,f);
-    font->PTSZ = SDL_SwapBE16(font->PTSZ);
+    font->PTSZ = byteswap_16(font->PTSZ);
     printf("Font pt size: %d\n",font->PTSZ);
 }
 void loadMAXW(PFF2* font, FILE* f)
 {
     fread(&font->MAXW,2,1,f);
-    font->MAXW = SDL_SwapBE16(font->MAXW);
+    font->MAXW = byteswap_16(font->MAXW);
     printf("Font max width: %d\n",font->MAXW);
 }
 void loadMAXH(PFF2* font, FILE* f)
 {
     fread(&font->MAXH,2,1,f);
-    font->MAXH = SDL_SwapBE16(font->MAXH);
+    font->MAXH = byteswap_16(font->MAXH);
     printf("Font max height: %d\n",font->MAXH);
 }
 void loadASCE(PFF2* font, FILE* f)
 {
     fread(&font->ASCE,2,1,f);
-    font->ASCE = SDL_SwapBE16(font->ASCE);
+    font->ASCE = byteswap_16(font->ASCE);
     printf("Font ascent: %d\n",font->ASCE);
 }
 void loadDESC(PFF2* font, FILE* f)
 {
     fread(&font->DESC,2,1,f);
-    font->DESC = SDL_SwapBE16(font->DESC);
+    font->DESC = byteswap_16(font->DESC);
     printf("Font descent: %d\n",font->DESC);
 }
 void nextCHIX(PFF2* font, FILE* f)
@@ -104,8 +119,8 @@ void nextCHIX(PFF2* font, FILE* f)
     fread(&mychix.codepoint,4,1,f);
     fread(&mychix.flags,1,1,f);
     fread(&mychix.addr,4,1,f);
-    mychix.codepoint=SDL_SwapBE32(mychix.codepoint);
-    mychix.addr=SDL_SwapBE32(mychix.addr);
+    mychix.codepoint=byteswap_32(mychix.codepoint);
+    mychix.addr=byteswap_32(mychix.addr);
     font->CHIX.push_back(mychix);
 }
 u32 count = 0;
@@ -113,9 +128,9 @@ void loadCHIX(PFF2* font, FILE* f)
 {
     u32 size;
     fread(&size,4,1,f);
-    size = SDL_SwapBE32(size);
+    size = byteswap_32(size);
     count = size/9;
-    for(uint i=0; i<count; i++)
+    for(size_t i=0; i<count; i++)
         nextCHIX(font,f);
     printf("Char count: %u\n",count);
 }
@@ -133,9 +148,30 @@ struct chardef
 int usage(char *prog, int rc)
 {
     printf("Usage: %s [ -c # ] <in.pf2> <outname>\n", prog);
-    printf("   -c # - bmp is character cells in # columns\n");
+    printf("   -c # - out image is character cells in # columns\n");
     exit(rc);
 }
+
+struct img
+{
+    int w,h,n;
+    unsigned char * data;
+    img(int w, int h, u32 color)
+    {
+        this->w = w;
+        this->h = h;
+        this->n = 4;
+        this->data = (unsigned char *)malloc(w*h*4);
+        auto data2 = (u32*)data;
+        
+        for(size_t i = 0; i < w*h; i++)
+            data2[i] = color;
+    }
+    ~img()
+    {
+        free(data);
+    }
+};
 
 int main(int argc, char ** argv)
 {
@@ -178,8 +214,8 @@ int main(int argc, char ** argv)
 
     std::string outtxt(argv[i+1]);
     outtxt += ".txt";
-    std::string outbmp(argv[i+1]);
-    outbmp += ".bmp";
+    std::string outimg(argv[i+1]);
+    outimg += ".bmp";
     
     FILE* f = fopen(argv[i],"rb");
     if(!f)
@@ -194,12 +230,12 @@ int main(int argc, char ** argv)
     if(data!=*(u32*)"FILE") goto invalid;
     
     fread(&data, 1, 4, f);
-    if(SDL_SwapBE32(data)!=4) goto invalid;
+    if(byteswap_32(data)!=4) goto invalid;
     
     fread(&data, 4, 1, f);
     if(data!=*(u32*)"PFF2") goto invalid;
     
-    #define check_invalid_simple_u16 {u32 junk; fread(&junk,4,1,f); if(SDL_SwapBE32(junk)!=2) goto invalid;}
+    #define check_invalid_simple_u16 {u32 junk; fread(&junk,4,1,f); if(byteswap_32(junk)!=2) goto invalid;}
     
     while(fread(&data, 4, 1, f),data!=*(u32*)"DATA" and !feof(f) and !ferror(f))
     {
@@ -261,12 +297,12 @@ int main(int argc, char ** argv)
         fread(&mydef.xoffset,2,1,f);
         fread(&mydef.yoffset,2,1,f);
         fread(&mydef.devicewidth,2,1,f);
-        mydef.width = SDL_Swap16(mydef.width);
-        mydef.height = SDL_Swap16(mydef.height);
-        mydef.xoffset = SDL_Swap16(mydef.xoffset);
-        mydef.yoffset = SDL_Swap16(mydef.yoffset);
-        mydef.devicewidth = SDL_Swap16(mydef.devicewidth);
-        uint length = (mydef.width*mydef.height+7)/8;
+        mydef.width = byteswap_16(mydef.width);
+        mydef.height = byteswap_16(mydef.height);
+        mydef.xoffset = byteswap_16(mydef.xoffset);
+        mydef.yoffset = byteswap_16(mydef.yoffset);
+        mydef.devicewidth = byteswap_16(mydef.devicewidth);
+        size_t length = (mydef.width*mydef.height+7)/8;
         char * data = nullptr;
         
         // check for read errors before malloc to avoid a malloc on junk length data
@@ -336,12 +372,12 @@ int main(int argc, char ** argv)
     }
 
     #define s_boxpad 1
-    uint d_cols = display; // display columns
+    size_t d_cols = display; // display columns
 
     u32 dwidth = sumWidth;
-    uint height = myfont.ASCE+myfont.DESC;
-    uint cheight = height; // character height
-    u32 dheight = height; // bmp height
+    size_t height = myfont.ASCE+myfont.DESC;
+    size_t cheight = height; // character height
+    u32 dheight = height; // outimg height
     if(display)
     {
         dwidth = (myfont.MAXW+s_boxpad+2)*d_cols+s_boxpad;
@@ -349,16 +385,15 @@ int main(int argc, char ** argv)
         height = cheight+s_boxpad+2;
         dheight = height*((myfont.CHIX.size()+(d_cols-1))/d_cols)+s_boxpad;
     }
-    printf("%dx%d\n",dheight,dwidth);
+    printf("%dx%d\n",dwidth,dheight);
     
-    #define c_bg 0x00606060
-    #define c_fg 0x00FFFFFF
-    #define c_red 0x00FF0000
-    #define c_null 0x00000000
+    #define c_bg 0xFF606060
+    #define c_fg 0xFFFFFFFF
+    #define c_red 0xFF0000FF
+    #define c_null 0xFF000000
     
-    SDL_Surface * myimage = SDL_CreateRGBSurface(0,dwidth,dheight,32,0,0,0,0);
-    SDL_FillRect(myimage, NULL, c_bg);
-    u32 * pixels = (u32*)myimage->pixels;
+    img myimage(dwidth,dheight,c_bg);
+    u32 * pixels = (u32*)myimage.data;
     u32 x = 0;
     u32 cnt = 0;
     for(auto c : myfont.CHIX)
@@ -369,12 +404,12 @@ int main(int argc, char ** argv)
         {
             // create bounding box
             y = (cnt/d_cols)*(s_boxpad+2+myfont.MAXH);
-            for(uint i = s_boxpad; i < s_boxpad+myfont.MAXW+2; i++)
+            for(size_t i = s_boxpad; i < s_boxpad+myfont.MAXW+2; i++)
             {
                 pixels[x+i + (y+s_boxpad)*dwidth] = c_null;
                 pixels[x+i + (y+s_boxpad+myfont.MAXH+1)*dwidth] = c_null;
             }
-            for(uint i = s_boxpad+1; i < s_boxpad+1+myfont.MAXH; i++)
+            for(size_t i = s_boxpad+1; i < s_boxpad+1+myfont.MAXH; i++)
             {
                 pixels[x+s_boxpad + (y+i)*dwidth] = c_null;
                 pixels[x+s_boxpad+myfont.MAXW+1 + (y+i)*dwidth] = c_null;
@@ -386,9 +421,9 @@ int main(int argc, char ** argv)
         if(oy < 0) printf("Font %d extends above ascent. Not all pixels will be included.\n", cnt+1);
         int ay = 0;
         int ox = display ? def.xoffset : 0;
-        for(uint i = 0; i < def.pixels.size(); i++)
+        for(size_t i = 0; i < def.pixels.size(); i++)
         {
-            int ax = i%def.width;
+            size_t ax = i%def.width;
             ay = i/def.width;
             u32 fg=c_fg;
             u32 bg=c_bg;
@@ -423,7 +458,7 @@ int main(int argc, char ** argv)
         x += display ? myfont.MAXW : def.width;
         if(! display)
         {
-            for(uint i = 0; i < height; i++)
+            for(size_t i = 0; i < height; i++)
             {
                 pixels[x + i*dwidth] = c_null;
             }
@@ -438,8 +473,14 @@ int main(int argc, char ** argv)
             }
         }
     }
-    SDL_SaveBMP(myimage, outbmp.data());
-    SDL_FreeSurface(myimage);
+    
+    printf("%dx%dx%d\n", myimage.w, myimage.h, myimage.n);
+    
+    int err = stbi_write_bmp(outimg.data(), myimage.w, myimage.h, 4, myimage.data);
+    
+    printf("%d\n", err);
+    
+    puts("finished gracefully");
     
     return 0;
 }

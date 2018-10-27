@@ -1,9 +1,11 @@
 #include <stdio.h>
-#include <SDL2/SDL.h>
 #include <vector>
 #include <string>
 #include <map>
 #include <string.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "deps/stb_image.h"
 
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -58,7 +60,7 @@ struct PFF2
 char * read_line(FILE * f)
 {
     auto start = ftell(f);
-    uint i = 0;
+    unsigned i = 0;
     int c = 0;
     while(i++,c=fgetc(f),c!='\n' and c!=EOF);
     auto len = ftell(f)-start;
@@ -215,11 +217,48 @@ char* bdata(BILE* stream, size_t offset, size_t count)
     return stream->buf+offset;
 }
 
+u32 byteswap_32(u32 in)
+{
+    return ((in & 0xFF) << 24)
+         | ((in & 0xFF00) << 8)
+         | ((in >> 8) & 0xFF00)
+         |  (in >> 24);
+}
+u16 byteswap_16(u16 in)
+{
+    return ((in & 0xFF) << 8) | (in >> 8);
+}
+
 void string_macro(BILE* stream, const std::string& str)
 {
-    bwrite(stream, SDL_SwapBE32(str.size()+1));
+    bwrite(stream, byteswap_32(str.size()+1));
     bwrite(stream, 1, str.size()+1, str.data());
 }
+
+struct img
+{
+    int w,h,n;
+    unsigned char * data;
+    img(const char * filename)
+    {
+        data = stbi_load(filename, &w, &h, &n, 4);
+    }
+    img(int w, int h, u32 color)
+    {
+        this->w = w;
+        this->h = h;
+        this->n = 4;
+        this->data = (unsigned char *)malloc(w*h*4);
+        auto data2 = (u32*)data;
+        
+        for(size_t i = 0; i < w*h; i++)
+            data2[i] = color;
+    }
+    ~img()
+    {
+        free(data);
+    }
+};
 
 int main(int argc, char ** argv)
 {
@@ -231,8 +270,8 @@ int main(int argc, char ** argv)
     
     std::string intxt(argv[1]);
     intxt += ".txt";
-    std::string inbmp(argv[1]);
-    inbmp += ".bmp";
+    std::string inimg(argv[1]);
+    inimg += ".bmp";
     
     FILE * f = fopen(intxt.data(),"r");
     if(!f)
@@ -241,9 +280,8 @@ int main(int argc, char ** argv)
         return 0;
     }
     
-    SDL_Surface * t = SDL_LoadBMP(inbmp.data());
-    SDL_Surface * myimage = SDL_ConvertSurfaceFormat(t, SDL_PIXELFORMAT_ARGB8888, 0);
-    if(!myimage)
+    img myimage(inimg.data());
+    if(!myimage.data)
     {
         puts("Couldn't open image.");
         return 0;
@@ -352,14 +390,15 @@ int main(int argc, char ** argv)
     
     #define c_bg 0xFF606060
     #define c_fg 0xFFFFFFFF
+    #define c_red 0xFF0000FF
     #define c_null 0xFF000000
     
-    auto w = myimage->w;
+    auto w = myimage.w;
     auto h = myfont.ASCE + myfont.DESC;
     
     auto x = 0;
     auto y = 0;
-    u32 * pixels = (u32*)myimage->pixels;
+    u32 * pixels = (u32*)myimage.data;
     
     printf("Chars: %lu\n",chars.size());
     
@@ -421,7 +460,7 @@ int main(int argc, char ** argv)
     BILE * basedata = bopen();
     
     bwrite(basedata, 4, 1, "FILE");
-    bwrite(basedata, SDL_SwapBE32(4));
+    bwrite(basedata, byteswap_32(4));
     bwrite(basedata, 4, 1, "PFF2");
     
     bwrite(basedata, 4, 1, "NAME");
@@ -434,27 +473,27 @@ int main(int argc, char ** argv)
     string_macro(basedata, myfont.SLAN);
     
     bwrite(basedata, 4, 1, "PTSZ");
-    bwrite(basedata, SDL_SwapBE32(2));
-    bwrite(basedata, SDL_SwapBE16(myfont.PTSZ));
+    bwrite(basedata, byteswap_32(2));
+    bwrite(basedata, byteswap_16(myfont.PTSZ));
     bwrite(basedata, 4, 1, "MAXW");
-    bwrite(basedata, SDL_SwapBE32(2));
-    bwrite(basedata, SDL_SwapBE16(myfont.MAXW));
+    bwrite(basedata, byteswap_32(2));
+    bwrite(basedata, byteswap_16(myfont.MAXW));
     bwrite(basedata, 4, 1, "MAXH");
-    bwrite(basedata, SDL_SwapBE32(2));
-    bwrite(basedata, SDL_SwapBE16(myfont.MAXH));
+    bwrite(basedata, byteswap_32(2));
+    bwrite(basedata, byteswap_16(myfont.MAXH));
     bwrite(basedata, 4, 1, "ASCE");
-    bwrite(basedata, SDL_SwapBE32(2));
-    bwrite(basedata, SDL_SwapBE16(myfont.ASCE));
+    bwrite(basedata, byteswap_32(2));
+    bwrite(basedata, byteswap_16(myfont.ASCE));
     bwrite(basedata, 4, 1, "DESC");
-    bwrite(basedata, SDL_SwapBE32(2));
-    bwrite(basedata, SDL_SwapBE16(myfont.DESC));
+    bwrite(basedata, byteswap_32(2));
+    bwrite(basedata, byteswap_16(myfont.DESC));
     
     auto CHIX_addr = btell(basedata);
     bwrite(basedata, 4, 1, "CHIX");
-    bwrite(basedata, SDL_SwapBE32(chixes.size()*9));
+    bwrite(basedata, byteswap_32(chixes.size()*9));
     for(auto c : chixes)
     {
-        bwrite(basedata, SDL_SwapBE32(c.codepoint));
+        bwrite(basedata, byteswap_32(c.codepoint));
         bwrite(basedata, char(0));
         bwrite(basedata, u32(0)); // to be overwritten by later code
     }
@@ -465,11 +504,11 @@ int main(int argc, char ** argv)
     for(auto d : defs)
     {
         offsets.push_back(btell(basedata));
-        bwrite(basedata, SDL_SwapBE16(d.width));
-        bwrite(basedata, SDL_SwapBE16(d.height));
-        bwrite(basedata, SDL_SwapBE16(d.xoffset));
-        bwrite(basedata, SDL_SwapBE16(d.yoffset));
-        bwrite(basedata, SDL_SwapBE16(d.devicewidth));
+        bwrite(basedata, byteswap_16(d.width));
+        bwrite(basedata, byteswap_16(d.height));
+        bwrite(basedata, byteswap_16(d.xoffset));
+        bwrite(basedata, byteswap_16(d.yoffset));
+        bwrite(basedata, byteswap_16(d.devicewidth));
         auto bytes = (d.width*d.height + 7)/8;
         int counter = 0;
         char c = 0;
@@ -492,12 +531,12 @@ int main(int argc, char ** argv)
     
     for(auto o : offsets)
     {
-        *(u32*)bdata(basedata, -1, 4) = SDL_SwapBE32(o);
+        *(u32*)bdata(basedata, -1, 4) = byteswap_32(o);
         bseek(basedata, 9, SEEK_CUR);
     }
     
     auto awfe = fopen(argv[2],"wb");
-    fwrite(bdata(basedata, 0, bsize(basedata)), 1, bsize(basedata), awfe);
+    int err = fwrite(bdata(basedata, 0, bsize(basedata)), 1, bsize(basedata), awfe);
     
     return 0;
 }
