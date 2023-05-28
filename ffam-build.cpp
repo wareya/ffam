@@ -62,7 +62,7 @@ char * read_line(FILE * f)
     auto start = ftell(f);
     unsigned i = 0;
     int c = 0;
-    while(i++,c=fgetc(f),c!='\n' and c!=EOF);
+    while(i++,c=fgetc(f),c!='\n' && c!=EOF);
     auto len = ftell(f)-start;
     if(ferror(f) or feof(f)) return nullptr;
     fseek(f,start,SEEK_SET);
@@ -133,7 +133,7 @@ size_t bread(BILE* stream, size_t size, size_t count, char* buffer)
     if(stream->len < size*count)
         return 0;
     size_t i = 0;
-    for(;i < size*count and i < stream->len; i += size)
+    for(;i < size*count && i < stream->len; i += size)
         memcpy(&buffer[i], &stream->buf[stream->off+i], size);
     stream->off += i;
     return i/size;
@@ -144,7 +144,7 @@ size_t bwrite(BILE* stream, size_t size, size_t count, const char* buffer)
     if(b_maybe_realloc(stream, stream->off+size*count))
         return 0;
     size_t i = 0;
-    for(;i < size*count and i < stream->len; i += size)
+    for(;i < size*count && i < stream->len; i += size)
     {
         if(buffer)
             memcpy(&stream->buf[stream->off+i], &buffer[i], size);
@@ -290,7 +290,7 @@ int main(int argc, char ** argv)
     PFF2 myfont;
     std::vector<chardat> chars;
     
-    while(!ferror(f) and !feof(f))
+    while(!ferror(f) && !feof(f))
     {
         char * line = read_line(f);
         if(line == nullptr) break;
@@ -302,7 +302,7 @@ int main(int argc, char ** argv)
         auto count = sscanf(line, "%255[^=:]%1[=:]%255[^\n]", key, kind, value);
         
         if(count == EOF) break;
-        if(kind[0] == '=' and count == 3)
+        if(kind[0] == '=' && count == 3)
         {
             if(strncmp(key, "NAME", 255) == 0)
             {
@@ -350,22 +350,22 @@ int main(int argc, char ** argv)
                 printf("Descent: %hu\n",myfont.DESC);
             }
         }
-        if(kind[0] == ':' and count == 2)
+        if(kind[0] == ':' && count == 2)
         {
             if(strncmp(key, "CHAR", 255) == 0)
             {
                 chardat mydat;
-                while(!ferror(f) and !feof(f))
+                while(!ferror(f) && !feof(f))
                 {
                     line = read_line(f);
                     if(line == nullptr) {chars.push_back(mydat); goto fallthru;}
                     if(line[0] == '\0') break;
                     if(line[0] == '\n') continue; // blank line
-                    if(line[0] != ' ' and line[0] != '\t') break;
+                    if(line[0] != ' ' && line[0] != '\t') break;
                     
                     auto count = sscanf(line, "%*[ \t]%255[^=:]%1[=:]%255[^\n]", key, kind, value);
                     if(count < 0) {puts("reeee");continue;} // string invalid or something
-                    if(kind[0] == '=' and count == 3)
+                    if(kind[0] == '=' && count == 3)
                     {
                         if(strncmp(key, "CODEPOINT", 255) == 0)
                         {
@@ -408,7 +408,7 @@ int main(int argc, char ** argv)
     for(auto c : chars)
     {
         auto d = 0;
-        while(x+d<w and pixels[x+d]!=c_null) d++;
+        while(x+d<w && pixels[x+d]!=c_null) d++;
         auto minx = d;
         auto maxx = 0;
         auto miny = h;
