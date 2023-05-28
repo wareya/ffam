@@ -237,7 +237,7 @@ int main(int argc, char ** argv)
     
     #define check_invalid_simple_u16 {u32 junk; fread(&junk,4,1,f); if(byteswap_32(junk)!=2) goto invalid;}
     
-    while(fread(&data, 4, 1, f),data!=*(u32*)"DATA" and !feof(f) and !ferror(f))
+    while(fread(&data, 4, 1, f),data!=*(u32*)"DATA" && !feof(f) && !ferror(f))
     {
         if(data==*(u32*)"NAME")
             loadNAME(&myfont, f);
@@ -287,7 +287,7 @@ int main(int argc, char ** argv)
     
     u32 printnum = 16;
     u32 glyphs = 0;
-    while(!ferror(f) and !feof(f))
+    while(!ferror(f) && !feof(f))
     {
         u32 setpixels = 0;
         u32 addr = ftell(f);
@@ -306,7 +306,7 @@ int main(int argc, char ** argv)
         char * data = nullptr;
         
         // check for read errors before malloc to avoid a malloc on junk length data
-        if(ferror(f) or feof(f)) goto cont;
+        if(ferror(f) || feof(f)) goto cont;
         
         data = (char*)malloc(length);
         
@@ -315,7 +315,7 @@ int main(int argc, char ** argv)
         fread(data,1,length,f);
         
         // check again now that we're done reading
-        if(ferror(f) or feof(f)) goto cont;
+        if(ferror(f) || feof(f)) goto cont;
         
         for(unsigned i=0;i<length;i++)
         {
